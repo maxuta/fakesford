@@ -4,7 +4,6 @@
 import argparse
 import logging
 
-
 from common.init_log import init_logging
 
 from structs import ListOf, Tutor
