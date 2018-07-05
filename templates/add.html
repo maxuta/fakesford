@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Add {{ what }}{% endblock %}
+
+{% block content %}
+<form action="/add_{{ what }}" method="post">
+    {% for f in fields %}
+        <div class="form-group">
+            <label for="name">{{ f }}</label>
+            <input type="text" name="{{ f }}" class="form-control" value="{{name}}"/>
+        </div>
+    {% endfor %}
+  <button type="submit" class="btn btn-primary">Do</button>
+</form>
+{% endblock %}
