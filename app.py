@@ -14,6 +14,8 @@ import flask
 from flask.ext.login import LoginManager
 from flask.ext.openid import OpenID
 
+from forms import LoginForm
+
 app = flask.Flask(__name__)
 
 
@@ -25,6 +27,23 @@ def render_template(*args, **kwargs):
 @app.route('/index')
 def index():
     return render_template('index.html')
+
+
+@app.route('/login', methods = ['GET', 'POST'])
+@oid.loginhandler
+def login():
+    if flask.g.user is not None and flask.g.user.is_authenticated():
+        return redirect(url_for('index'))
+
+    form = LoginForm()
+    if form.validate_on_submit():
+        flask.session['remember_me'] = form.remember_me.data
+        return oid.try_login(form.openid.data, ask_for = ['nickname', 'email'])
+
+    return render_template('login.html', 
+            title = 'Sign In',
+            form = form,
+            providers = app.config['OPENID_PROVIDERS'])
 
 
 @app.route('/tutors')
@@ -77,6 +96,7 @@ def add_tutor():
 def get_args():
     parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS)
     parser.add_argument('-l', dest='logfile', type=str, default=None, help='path to logfile')
+    parser.add_argument('-w', dest='workdir', type=str, default='workdir', help='path to workdir')
 
     return parser.parse_args()
 
@@ -92,10 +112,22 @@ def init_structs(cache_dir):
     app._tutors = ListOf(Tutor, app._db)
 
 
+def workpath(path):
+    return os.path.join(app.workdir, path)
+
+
+def init_auth():
+    lm = LoginManager()
+    lm.init_app(app)
+    oid = OpenID(app, workpath('tmp'))
+
+
 if __name__ == '__main__':
     args = get_args()
 
+    app.workdir = os.path.abspath(args.workdir)
     init_logging(args.logfile)
-    init_structs('cache')
+
+    init_structs(workpath('cache'))
 
     app.run('::', 3322, debug=True)
