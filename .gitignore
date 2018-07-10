@@ -1,4 +1,8 @@
 *.log
-*.pyc
+*.py[cod]
 cache
 logs
+*.swp
+*.swo
+
+*/__pycache__/*
