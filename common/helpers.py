@@ -1,4 +1,7 @@
 import os
+import json
+import hmac
+import hashlib
 
 
 def change_owner(path, uid=None, gid=None):
@@ -50,15 +53,15 @@ def md5data(d):
 
 
 def dump_dict(data):
-    return json.dumps(data, sort_keys=True)
+    return json.dumps(data, sort_keys=True).encode('utf-8')
 
 
 def dict_hash(data):
-    md5data(dump_dict(data))
+    return md5data(dump_dict(data))
 
 
 def sign(key, data):
-    return hmac.new(key=key, msg=dump_dict(info)).hexdigest()
+    return hmac.new(key=key.encode('utf-8'), msg=dump_dict(data)).hexdigest()
 
 
 def safe_password(username, password):

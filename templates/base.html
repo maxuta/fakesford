@@ -12,6 +12,16 @@
           <a class="navbar-brand" href="/">Fakesford</a>
         </div>
       </div>
+
+      <nav class="navbar-right">
+          <div class="dropdown">
+              <button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">
+                   {{ login or "guest" }}
+               </button>
+               <div class="dropdown-menu">
+                   <a class="dropdown-item" href="#">logout</a>
+               </div>
+      </nav>
     </nav>
 
     <div class="container">

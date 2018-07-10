@@ -29,22 +29,28 @@ def verify_sign(info, sign):
 def authorize(f):
     @functools.wraps(f)
     def g(*args, **kwargs):
-        auth = flask.request.cookies.get('auth')
-
-        if not auth:
+        username = get_login()
+        if not username:
             return flask.redirect('/login')
-
-        info, sign = json.loads(auth)
-        if verify_sign(info, sign):
-            flask.g.user = info['user']
 
         return f(*args, **kwargs)
 
     return g
 
 
+def get_login():
+    auth = flask.request.cookies.get('auth')
+
+    if not auth:
+        return
+
+    info, sign = json.loads(auth)
+    if verify_sign(info, sign):
+        return info['user']
+
+
 def render_template(*args, **kwargs):
-    return flask.render_template(*args, **kwargs)
+    return flask.render_template(*args, login=get_login(), **kwargs)
 
 
 @app.route('/')
@@ -55,6 +61,23 @@ def index():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if flask.request.method == 'POST':
+        info = transform_flask_form(flask.request.form)
+        passwd = ch.safe_password(info['username'], info['password'])
+
+        for tutor in app._tutors.iter():
+            if tutor.username == info['username']:
+                if tutor.password == passwd:
+                    # set cookie
+                    resp = flask.make_response(flask.redirect('/tutors'))
+                    userinfo = {'user': info['username']}
+                    resp.set_cookie('auth', json.dumps((userinfo, ch.sign(app.secret_key, userinfo))))
+                    return resp
+                else:
+                    return 'wrong password', 403
+
+        return 'unknown user', 403
+
     return render_template('login.html')
 
 

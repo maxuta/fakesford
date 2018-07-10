@@ -2,6 +2,7 @@
 *.py[cod]
 cache
 logs
+config.json
 *.swp
 *.swo
 
