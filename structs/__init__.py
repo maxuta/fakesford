@@ -12,12 +12,6 @@ class ListOf(object):
         self._db = db
         self.load()
 
-    def gen_index(self):
-        if not self._list:
-            return 0
-
-        return self._list[-1].id + 1
-
     def iter(self):
         return iter(self._list)
 
@@ -25,7 +19,7 @@ class ListOf(object):
         return self._class.__name__.lower() + 's'
 
     def add(self, **kwargs):
-        unit = self._class(id=self.gen_index(), **kwargs)
+        unit = self._class(**kwargs)
         self._list.append(unit)
         self.store()
 
@@ -43,3 +37,11 @@ class ListOf(object):
 
     def fields(self):
         return self._class._fields
+
+    def public_fields(self):
+        res = []
+        for f in self.fields():
+            if f not in ('username', 'password'):
+                res.append(f)
+
+        return res

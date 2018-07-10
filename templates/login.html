@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<form action="/login" method="post">
+    <div class="form-group">
+        <label for="name">username</label>
+        <input type="text" name="login" class="form-control"/>
+        <label for="name">password</label>
+        <input type="password" name="password" class="form-control""/>
+    </div>
+  <button type="submit" class="btn btn-primary">Login</button>
+</form>
+
+<br/>
+
+<form action="{{ url_for("add_tutor") }}">
+    <input type="submit" class="btn btn-success" value="Registration" />
+</form>
+{% endblock %}

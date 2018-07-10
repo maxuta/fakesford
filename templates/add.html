@@ -1,15 +1,32 @@
 {% extends "base.html" %}
 
-{% block title %}Add {{ what }}{% endblock %}
+{% block title %}New {{ what }}{% endblock %}
 
 {% block content %}
 <form action="/add_{{ what }}" method="post">
+    <div class="form-group">
+        <label for="name">username</label>
+        <input type="text" name="username" class="form-control"/>
+    </div>
+    <div class="form-group">
+        <label for="name">password</label>
+        <input type="password" name="password" class="form-control"/>
+    </div>
+    <div class="form-group">
+        <label for="name">verify password</label>
+        <input type="password" name="verify_password" class="form-control"/>
+    </div>
+
+    <br/>
+    <h5>tell us about yourself</h5>
+    <hr/>
     {% for f in fields %}
         <div class="form-group">
             <label for="name">{{ f }}</label>
             <input type="text" name="{{ f }}" class="form-control" value="{{name}}"/>
         </div>
     {% endfor %}
+
   <button type="submit" class="btn btn-primary">Do</button>
 </form>
 {% endblock %}

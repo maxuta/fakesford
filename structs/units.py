@@ -2,6 +2,7 @@
 
 import json
 from collections import namedtuple
+import common.helpers as ch
 
 
 class BaseStruct(object):
@@ -9,17 +10,19 @@ class BaseStruct(object):
         return {k: getattr(self, k) for k in self._fields}
 
 
-_tutor_class = namedtuple('TutorBase', ['id', 'name', 'surname', 'age', 'subjects'])
+_tutor_class = namedtuple('TutorBase', ['username', 'password', 'name', 'surname', 'age', 'subjects'])
 
 
 class Tutor(_tutor_class, BaseStruct):
-    def __new__(cls, id, name, surname, age=None, subjects=None):
+    def __new__(cls, username, password, name, surname, age=None, subjects=None):
         if subjects is None:
             subjects = []
         else:
             subjects = list(sorted(set(subjects)))
 
-        self = super().__new__(cls, id, name, surname, age, subjects)
+        password = ch.safe_password(username, password)
+
+        self = super().__new__(cls, username, password, name, surname, age, subjects)
 
         return self
 

@@ -3,20 +3,44 @@
 
 import argparse
 import logging
+import hmac
+import json
+import os
+
+import functools
 
 from common.init_log import init_logging
 
 from structs import ListOf, Tutor
 from common.cache import Cache
 
+import common.helpers as ch
+
 import flask
 
-from flask.ext.login import LoginManager
-from flask.ext.openid import OpenID
-
-from forms import LoginForm
-
 app = flask.Flask(__name__)
+
+
+def verify_sign(info, sign):
+    # TODO: check ip, browser, expiration time
+    return sign == ch.sign(app.secret_key, info)
+
+
+def authorize(f):
+    @functools.wraps(f)
+    def g(*args, **kwargs):
+        auth = flask.request.cookies.get('auth')
+
+        if not auth:
+            return flask.redirect('/login')
+
+        info, sign = json.loads(auth)
+        if verify_sign(info, sign):
+            flask.g.user = info['user']
+
+        return f(*args, **kwargs)
+
+    return g
 
 
 def render_template(*args, **kwargs):
@@ -29,26 +53,15 @@ def index():
     return render_template('index.html')
 
 
-@app.route('/login', methods = ['GET', 'POST'])
-@oid.loginhandler
+@app.route('/login', methods=['GET', 'POST'])
 def login():
-    if flask.g.user is not None and flask.g.user.is_authenticated():
-        return redirect(url_for('index'))
-
-    form = LoginForm()
-    if form.validate_on_submit():
-        flask.session['remember_me'] = form.remember_me.data
-        return oid.try_login(form.openid.data, ask_for = ['nickname', 'email'])
-
-    return render_template('login.html', 
-            title = 'Sign In',
-            form = form,
-            providers = app.config['OPENID_PROVIDERS'])
+    return render_template('login.html')
 
 
 @app.route('/tutors')
+@authorize
 def tutors():
-    fields = app._tutors.fields()
+    fields = app._tutors.public_fields()
     
     def iter_tutors():
         for i in app._tutors.iter():
@@ -71,25 +84,31 @@ def transform_flask_form(form):
 
 def register_tutor(form):
     kwargs = transform_flask_form(form)
+
+    if not kwargs.get('password'):
+        return 'you should specify password', 401
+
+    if kwargs.get('password') != kwargs.get('verify_password'):
+        return 'passwords do not match', 401
+
+    del kwargs['verify_password']
+
     subjects = kwargs.get('subjects')
     if subjects:
         kwargs['subjects'] = [s.strip() for s in subjects.split(',') if s.strip()]
     else:
         kwargs['subjects'] = []
     app._tutors.add(**kwargs)
+    return flask.redirect('/')
 
 
 @app.route('/add_tutor', methods=['POST', 'GET'])
 def add_tutor():
     if flask.request.method == 'POST':
-        register_tutor(flask.request.form)
-        return flask.redirect('/')
+        return register_tutor(flask.request.form)
 
     what = 'tutor'
-    fields = list(app._tutors.fields())
-    if 'id' in fields:
-        fields.remove('id')
-
+    fields = list(app._tutors.public_fields())
     return render_template('add.html', fields=fields, what=what)
 
 
@@ -97,6 +116,7 @@ def get_args():
     parser = argparse.ArgumentParser(argument_default=argparse.SUPPRESS)
     parser.add_argument('-l', dest='logfile', type=str, default=None, help='path to logfile')
     parser.add_argument('-w', dest='workdir', type=str, default='workdir', help='path to workdir')
+    parser.add_argument('-c', '--cfg', dest='config', default='config.json', type=str, help='path to config file')
 
     return parser.parse_args()
 
@@ -116,17 +136,20 @@ def workpath(path):
     return os.path.join(app.workdir, path)
 
 
-def init_auth():
-    lm = LoginManager()
-    lm.init_app(app)
-    oid = OpenID(app, workpath('tmp'))
+def init_auth(secret):
+    app.secret_key = secret
 
 
 if __name__ == '__main__':
     args = get_args()
 
+    with open(args.config) as f:
+        app.cfg = json.load(f)
+
     app.workdir = os.path.abspath(args.workdir)
+    
     init_logging(args.logfile)
+    init_auth(app.cfg['secret'])
 
     init_structs(workpath('cache'))
 

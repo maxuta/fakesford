@@ -43,3 +43,23 @@ def writefile(p, data, chmod=None, uid=None, gid=None):
 
 def readfile(path):
     return open(path, 'rb').read()
+
+
+def md5data(d):
+    return hashlib.md5(d).hexdigest()
+
+
+def dump_dict(data):
+    return json.dumps(data, sort_keys=True)
+
+
+def dict_hash(data):
+    md5data(dump_dict(data))
+
+
+def sign(key, data):
+    return hmac.new(key=key, msg=dump_dict(info)).hexdigest()
+
+
+def safe_password(username, password):
+    return dict_hash({'username': username, 'password': password})
