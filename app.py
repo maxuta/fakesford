@@ -81,6 +81,13 @@ def login():
     return render_template('login.html')
 
 
+@app.route('/logout', methods=['GET'])
+def logout():
+    resp = flask.make_response(flask.redirect('/'))
+    resp.set_cookie('auth', '')
+    return resp
+
+
 @app.route('/tutors')
 @authorize
 def tutors():
