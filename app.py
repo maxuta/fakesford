@@ -16,6 +16,8 @@ from common.cache import Cache
 
 import common.helpers as ch
 
+from db.mongo import connect
+
 import flask
 
 app = flask.Flask(__name__)
@@ -115,6 +117,9 @@ def transform_flask_form(form):
 def register_tutor(form):
     kwargs = transform_flask_form(form)
 
+    if not kwargs.get('username'):
+        return 'you should specify username', 401
+
     if not kwargs.get('password'):
         return 'you should specify password', 401
 
@@ -122,6 +127,8 @@ def register_tutor(form):
         return 'passwords do not match', 401
 
     del kwargs['verify_password']
+
+    kwargs['password'] = ch.safe_password(kwargs['username'], kwargs['password'])
 
     subjects = kwargs.get('subjects')
     if subjects:
@@ -177,6 +184,7 @@ if __name__ == '__main__':
         app.cfg = json.load(f)
 
     app.workdir = os.path.abspath(args.workdir)
+    app.db = connect('fakesford')
     
     init_logging(args.logfile)
     init_auth(app.cfg['secret'])

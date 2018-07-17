@@ -66,3 +66,7 @@ def sign(key, data):
 
 def safe_password(username, password):
     return dict_hash({'username': username, 'password': password})
+
+
+def fast_copy(data):
+    return json.loads(json.dumps(data))
